@@ -2,6 +2,24 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const bookRoutes = require("./routes/book");
 const userRoutes = require("./routes/user");
+const path = require("path");
+
+const mongoose = require("mongoose");
+
+/* Connection BDD mongoose */
+mongoose
+    .connect(process.env.DBCONNECT, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+    })
+    // Demarrage serveur
+    .then(() =>
+        app.listen(process.env.SERVER_PORT, () => {
+            console.log(`This server is running on port ${process.env.SERVER_PORT}. Enjoy !`);
+        })
+    )
+    // Arret du serveur si connection impossible
+    .catch(() => console.log("Server connection failed !"));
 
 const app = express();
 
@@ -17,9 +35,10 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(bodyParser.json());
+//app.use(bodyParser.json());
 
-app.use("/api/book", bookRoutes);
+app.use("/api/books", bookRoutes);
 app.use("/api/auth", userRoutes);
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 module.exports = app;
