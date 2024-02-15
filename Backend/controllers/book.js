@@ -16,7 +16,9 @@ exports.createBook = (req, res, next) => {
             res.status(201).json({ message: "Livre enregistré !" });
         })
         .catch((error) => {
-            res.status(400).json({ error });
+            fs.unlink(`images/${req.file.filename}`, () => {
+                res.status(400).json({ error });
+            });
         });
 };
 
@@ -33,6 +35,13 @@ exports.modifyBook = (req, res, next) => {
         .then((book) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message: "Not authorized" });
+            } else if (req.file) {
+                const filename = book.imageUrl.split("/images/")[1];
+                fs.unlink(`images/${filename}`, () => {
+                    Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+                        .then(() => res.status(200).json({ message: "Livre modifié!" }))
+                        .catch((error) => res.status(401).json({ error }));
+                });
             } else {
                 Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: "Livre modifié!" }))
@@ -106,7 +115,7 @@ exports.createRating = (req, res, next) => {
             }
             const totalRatings = book.ratings.reduce((total, rating) => total + rating.grade, 0);
             const averageRating = totalRatings / book.ratings.length;
-            book.averageRating = averageRating;
+            book.averageRating = Math.round(averageRating * 10) / 10;
             return book.save();
         })
         .then((book) => {
