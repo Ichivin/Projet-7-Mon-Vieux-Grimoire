@@ -76,3 +76,43 @@ exports.getAllBook = (req, res, next) => {
         .then((books) => res.status(200).json(books))
         .catch((error) => res.status(400).json({ error }));
 };
+
+exports.getBestrating = (req, res, next) => {
+    Book.find({})
+        .sort({ averageRating: -1 })
+        .limit(3)
+        .then((bestBooks) => {
+            res.status(200).json(bestBooks);
+        })
+        .catch((error) => {
+            res.status(400).json({ error });
+        });
+};
+
+exports.createRating = (req, res, next) => {
+    const { rating } = req.body;
+    Book.findOne({ _id: req.params.id })
+        .then((book) => {
+            const currentUserId = req.auth.userId;
+            const existingRatingIndex = book.ratings.findIndex((rating) => rating.userId === currentUserId);
+
+            if (existingRatingIndex !== -1) {
+                book.ratings[existingRatingIndex].grade = rating;
+            } else {
+                book.ratings.push({
+                    userId: req.auth.userId,
+                    grade: req.body.rating,
+                });
+            }
+            const totalRatings = book.ratings.reduce((total, rating) => total + rating.grade, 0);
+            const averageRating = totalRatings / book.ratings.length;
+            book.averageRating = averageRating;
+            return book.save();
+        })
+        .then((book) => {
+            res.status(201).json(book);
+        })
+        .catch((error) => {
+            res.status(400).json({ error });
+        });
+};
