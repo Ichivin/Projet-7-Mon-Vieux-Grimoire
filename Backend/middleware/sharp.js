@@ -12,13 +12,17 @@ const resizeImage = (req, res, next) => {
             if (error) {
                 console.error("Erreur lors de la modification de l'image :", error);
                 res.status(500).json({ error });
-            } else {
-                fs.unlinkSync(req.file.path);
-                console.log(req.file.path);
-                req.file.path = imageOutput;
-                req.file.mimetype = "image/webp";
-                req.file.filename = req.file.filename.replace(/\.(jpg|jpeg|png|webp)$/, "converted.webp");
                 next();
+            } else {
+                fs.unlink(imageInput, (error) => {
+                    if (error) {
+                        console.error(error);
+                    }
+                    req.file.path = imageOutput;
+                    req.file.mimetype = "image/webp";
+                    req.file.filename = req.file.filename.replace(/\.(jpg|jpeg|png|webp)$/, "converted.webp");
+                    next();
+                });
             }
         });
 };
